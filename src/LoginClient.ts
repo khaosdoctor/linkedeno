@@ -54,9 +54,7 @@ export class LinkedinClient {
     return { url: url.toString().replaceAll('+', '%20'), nonce }
   }
 
-  async exchangeLoginToken(loginToken: string, nonce: string) {
-    this.logger.debug(`LinkedinClient.exchangeAccessToken :: nonce ${nonce}`)
-
+  async exchangeLoginToken(loginToken: string) {
     const response = await fetch(LinkedinURLs.getOrRefreshAccessToken, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -65,8 +63,8 @@ export class LinkedinClient {
         code: loginToken,
         redirect_uri: this.clientOptions.oauthCallbackUrl,
         client_id: this.clientOptions.clientId,
-        client_secret: this.clientOptions.clientSecret,
-      }),
+        client_secret: this.clientOptions.clientSecret
+      })
     })
 
     const data = accessTokenResponseSchema.parse(await response.json())
