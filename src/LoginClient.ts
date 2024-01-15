@@ -46,11 +46,7 @@ export class LinkedinClient {
     url.searchParams.append('client_id', this.clientOptions.clientId)
     url.searchParams.append('redirect_uri', this.clientOptions.oauthCallbackUrl)
     url.searchParams.append('state', nonce)
-    url.searchParams.append(
-      'scope',
-      this.clientOptions.oauthScopes?.join(' ') ??
-        'r_emailaddress w_member_social r_basicprofile w_organization_social rw_ads r_organization_social'
-    )
+    url.searchParams.append('scope', this.clientOptions.oauthScopes?.join(' ') ?? 'r_emailaddress r_basicprofile')
 
     this.logger.debug(`LinkedinClient.loginUrl :: URL ${url.toString()}`)
     this.logger.debug(`LinkedinClient.loginUrl :: nonce ${nonce}`)
