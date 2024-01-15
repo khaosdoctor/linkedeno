@@ -22,6 +22,8 @@
 
 ## Usage
 
+> For more usage examples see [an example repository](https://github.com/Formacao-Typescript/cloud-socials/blob/main/src/networks/linkedin.ts)
+
 You'll need:
 
 - A LinkedIn Developer account (go to https://developer.linkedin.com/)
@@ -32,7 +34,7 @@ You'll need:
 Import the library:
 
 ```ts
-import { LinkedinClient } from "https://deno.land/x/linkedin/mod.ts";
+import { LinkedinClient } from 'https://deno.land/x/linkedin/mod.ts'
 ```
 
 Create a new client:
@@ -63,60 +65,72 @@ interface LinkedinClientOptions {
 This lib only provides the 3-legged OAuth2 flow. You'll need to implement your own server to handle the callback. The callback will receive a `code` query parameter that you'll need to pass to the `exchangeLoginToken` method.
 
 ```ts
-import { LinkedinClient } from "https://deno.land/x/linkedin/mod.ts";
+import { LinkedinClient, InvalidStateError } from 'https://deno.land/x/linkedin/mod.ts'
 const ln = new LinkedinClient(options) // fill in the options with the callback url
 let authenticatedClient = undefined
 
 // This is your server, let's say it's running oak
-const app = new Application();
+const app = new Application()
 
-let nonce = undefined // this nonce will be used to validate the callback
 // This is the URL you'll need to redirect the user to
 app.get('/oauth/login', (ctx) => {
-	const loginObject = ln.loginUrl // this returns an object with a url and a nonce
-  nonce = loginObject.nonce
+  const loginObject = ln.loginUrl // this returns an object with a url and a nonce
 
-	ctx.response.headers.set('Location', loginObject.url)
-	ctx.response.status = 302
-	return
+  ctx.response.headers.set('Location', loginObject.url)
+  ctx.response.status = 302
+  return
 })
 
 // this is the handler for the callback
 app.get('/oauth/callback', async (ctx) => {
-	const params = ctx.request.url.searchParams
+  const params = ctx.request.url.searchParams
 
-	if (params.has('error')) {
-		throw oak.createHttpError(400, 'Error from Linkedin', {
-			cause: {
-				error: params.get('error'),
-				error_description: decodeURIComponent(params.get('error_description')!),
-			},
-		})
-	}
+  if (params.has('error')) {
+    throw oak.createHttpError(400, 'Error from Linkedin', {
+      cause: {
+        error: params.get('error'),
+        error_description: decodeURIComponent(params.get('error_description')!)
+      }
+    })
+  }
 
-	const code = params.get('code')
-	const state = params.get('state')
+  const code = params.get('code')
+  const state = params.get('state')
 
-	if (!code || !state) {
-		throw oak.createHttpError(422, 'Missing code or state')
-	}
+  if (!code || !state) {
+    throw oak.createHttpError(422, 'Missing code or state')
+  }
 
-	const csrfMatch = state === nonce
-	if (!csrfMatch) {
-		throw oak.createHttpError(401, 'Invalid state')
-	}
+  try {
+    authenticatedClient = await ln.exchangeLoginToken(code, state) // you can use this to make requests to the API
 
-	authenticatedClient = await ln.exchangeLoginToken(code) // you can use this to make requests to the API
-
-	ctx.response.status = 200
-	ctx.response.body = {
-		status: 'ok',
-		message: 'Logged in successfully',
-	}
+    ctx.response.status = 200
+    ctx.response.body = {
+      status: 'ok',
+      message: 'Logged in successfully'
+    }
+  } catch (err) {
+    if (err instanceof InvalidStateError) {
+      ctx.response.status = 401
+      ctx.response.body = {
+        status: 'error',
+        message: 'Invalid state'
+      }
+      return
+    }
+  }
 })
 ```
 
-> **About CSRF**: The nonce is used to prevent CSRF attacks. You should generate a random nonce and store it in the session. When the callback is called, you should compare the nonce with the one you stored in the session. If they match, then the request is valid. In this case, I'm not saving anything anywhere, but you should set up a session store and save the nonce there. The lib will take care of generating a random nonce for you at every call to `loginUrl`.
+### Nonce, state and CSRF
+
+The `loginUrl` method will return an object with a `url` and a `nonce`. The `nonce` is a random string that you'll need to store in your session. When the user is redirected to the callback URL, you'll need to check that the `state` query parameter matches the `nonce` you stored in your session. This is to prevent CSRF attacks.
+
+This lib has a built-in simple session manager that will save all generated nonces in memory for a specified amount of time (defined in the `LinkedinClientOptions` object). The session manager lives in a static property of the `LinkedinClient` class called `validSessions`, it's a read-only `Set` of strings that contains all the valid nonces that were generated.
+
+When the `exchangeLoginToken` method is called, it will check that the `state` parameter matches one of the nonces in the `validSessions` set. If it doesn't, it will throw an `InvalidStateError` error and early return.
+
+You can disable this behavior by setting the `noValidateCSRF` option to `true` in the `LinkedinClientOptions` object. By doing this, the nonces will no longer be saved, and the `exchangeLoginToken` method will not check the `state` parameter and will just exchange the code for an access token. **Only do this if you intend to implement your own nonce validation mechanism.**
 
 ## Making requests
 
