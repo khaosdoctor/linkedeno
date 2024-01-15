@@ -48,7 +48,8 @@ export class LinkedinClient {
     url.searchParams.append('state', nonce)
     url.searchParams.append(
       'scope',
-      'r_emailaddress w_member_social r_basicprofile w_organization_social rw_ads r_organization_social',
+      this.clientOptions.oauthScopes?.join(' ') ??
+        'r_emailaddress w_member_social r_basicprofile w_organization_social rw_ads r_organization_social'
     )
 
     this.logger.debug(`LinkedinClient.loginUrl :: URL ${url.toString()}`)
