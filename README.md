@@ -1,2 +1,3 @@
 # deno-linkedin
-LinkedIn client integration for Deno
+
+> An attempt to port the LinkedIn API to Deno. (at least the most important parts)
