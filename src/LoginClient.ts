@@ -19,6 +19,11 @@ export interface LinkedinClientOptions {
   nonceExpirationMs?: number
 }
 
+/**
+ * Client for the LinkedIn API.
+ * This client is used to generate the login URL and to exchange the login token for an access token.
+ * After you have an access token, you can use the AuthenticatedLinkedinClient to make requests to the API.
+ */
 export class LinkedinClient {
   readonly logger = logger
   readonly retries: number
@@ -44,10 +49,19 @@ export class LinkedinClient {
       throw new MissingParameterError(missing)
     }
   }
+
+  /**
+   * Returns a list of all the valid session nonces
+   */
   static get validSessions() {
     return LinkedinClient.sessionMap.values()
   }
 
+  /**
+   * Returns the login URL and the nonce for the OAuth flow.
+   * This method will manage the CSRF protection by default unless the noValidateCSRF option is set to true.
+   * By default it will save the nonce in a Set for 1 minute, but you can change the expiration time with the nonceExpirationMs option.
+   */
   get loginUrl() {
     const url = new URL(LinkedinURLs.loginUrl)
     const nonce = encodeBase64(crypto.getRandomValues(new Uint8Array(32)))
@@ -75,6 +89,12 @@ export class LinkedinClient {
     return { url: url.toString().replaceAll('+', '%20'), nonce }
   }
 
+  /**
+   * Exchanges the login token for an access token.
+   * And returns an AuthenticatedLinkedinClient that can be used to make requests to the API.
+   * You can also instantiate the AuthenticatedLinkedinClient directly if you already have an access token.
+   * But you will need an instance of the LinkedinClient anyway
+   */
   async exchangeLoginToken(loginToken: string, receivedNonce: string) {
     if (!this.clientOptions.noValidateCSRF && !LinkedinClient.sessionMap.has(receivedNonce)) {
       this.logger.critical(`LinkedinClient.exchangeLoginToken :: receivedNonce ${receivedNonce} not found in nonceMap`)
@@ -89,8 +109,8 @@ export class LinkedinClient {
         code: loginToken,
         redirect_uri: this.clientOptions.oauthCallbackUrl,
         client_id: this.clientOptions.clientId,
-        client_secret: this.clientOptions.clientSecret
-      })
+        client_secret: this.clientOptions.clientSecret,
+      }),
     })
 
     const data = accessTokenResponseSchema.parse(await response.json())

@@ -1,3 +1,6 @@
+/**
+ * Base error class for all errors thrown by the LinkedInClient.
+ */
 export class BaseError<TData = unknown> extends Error {
   readonly data?: TData
   readonly code?: string

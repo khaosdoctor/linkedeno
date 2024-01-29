@@ -56,6 +56,8 @@ interface LinkedinClientOptions {
   retryAttempts?: number // Number of retry attempts if a request fails (default 3)
   defaultDelayBetweenRequestsMs?: number // Default delay between retry requests in milliseconds (default 500)
   noRetries?: boolean // If true, no retries will be attempted (default false)
+  noValidateCSRF?: boolean // If true, no CSRF validation will be performed (default false)
+  nonceExpirationMs?: number // The time in milliseconds that a nonce will be valid for (default 60000)
 }
 ```
 
@@ -146,9 +148,7 @@ doing this, the nonces will no longer be saved, and the `exchangeLoginToken` met
 and will just exchange the code for an access token. **Only do this if you intend to implement your own nonce validation
 mechanism.**
 
-## Making requests
-
-### Token handling
+## Token handling
 
 The exchange method will return an authenticated client that you can use to make requests to the API. This client
 contains all the methods you need to make requests to the API (at least the available ones).
@@ -160,3 +160,35 @@ automatically. You can use the `refreshAccessToken` method to refresh all the to
 In case one of the tokens is expired or not present, the lib will throw an error. You can catch this error and call
 `refreshAccessToken` to refresh the tokens and retry the request, except if the refresh token itself is expired, in this
 case you need to log in again since there's no way to refresh the refresh token.
+
+### Managing tokens yourself
+
+If your application is a server application, you can store the tokens in a database and retrieve them when needed (which
+is recommended since tokens can outlive your application and you don't want people to keep relogging). You just need to
+pass on the `accessToken` property to any of the methods that make requests to the API, when this is done, the lib will
+use the token you passed instead of the one stored in memory.
+
+```ts
+const ln = new LinkedinClient(options)
+// ... you performed authentication here
+const authClient = await ln.exchangeLoginToken(code, state)
+authClient.accessToken // this is the access token
+authClient.refreshToken // this is the refresh token
+authClient.accessTokenExpiresIn // this is the time in seconds until the access token expires
+authClient.accessTokenExpirationDate // this is the date when the access token expires
+authClient.refreshTokenExpiresIn // this is the time in seconds until the refresh token expires
+authClient.refreshTokenExpirationDate // this is the date when the refresh token expires
+```
+
+You can also use the setters both for the `accessToken` and `refreshToken` properties to set the tokens manually this
+way you don't need to pass on the property all the time.
+
+```ts
+authClient.accessToken = 'my access token'
+authClient.sharePost(thePost) // this will use the access token you set
+authClient.sharePost(thePost, 'my access token') // this will also work
+```
+
+## Available APIs
+
+Please look at the documentation [on the Deno website](https://doc.deno.land/https/deno.land/x/linkedin/mod.ts) for

@@ -1,3 +1,6 @@
+/**
+ * Asset types supported by the LinkedIn API
+ */
 export enum LinkedinMediaTypes {
   IMAGE = 'image',
   DOCUMENT = 'document',
@@ -6,8 +9,7 @@ export enum LinkedinMediaTypes {
 }
 
 /**
- * @enum LinkedinOauthScopes
- * @description List of allowed scopes for Linkedin OAuth2
+ * List of allowed scopes for Linkedin OAuth2
  * @see https://learn.microsoft.com/en-us/linkedin/shared/authentication/authentication#member-authorization-3-legged-oauth-flow
  *
  * @property {string} OPENID - Use your name and photo
@@ -44,6 +46,9 @@ export const enum LinkedinOauthScopes {
   ORGANIZATION_ADMIN_READ = 'r_organization_admin',
 }
 
+/**
+ * Options that are allowed when initializing an upload depending on the media type
+ */
 export type InitializeUploadOptions<T extends LinkedinMediaTypes> = T extends
   | LinkedinMediaTypes.IMAGE
   | LinkedinMediaTypes.DOCUMENT ? {
@@ -57,6 +62,10 @@ export type InitializeUploadOptions<T extends LinkedinMediaTypes> = T extends
     }
   : never
 
+/**
+ * When the upload is a video, the return value of the initialize upload request is different
+ * it will contain a list of URLs that can be used to upload the video in chunks
+ */
 export type VideoUploadInstructions = {
   uploadUrl: string
   lastByte: number
@@ -75,6 +84,9 @@ interface LocalizedProperty {
   preferredLocale: PreferredLocale
 }
 
+/**
+ * The response from the LinkedIn API when requesting the user profile
+ */
 export interface GetSelfProfileResponse {
   localizedLastName: string
   profilePicture: {
@@ -105,6 +117,9 @@ type LinkedinAdContextType =
     isDsc: true
   }
 
+/**
+ * The media content needed when sharing a post
+ */
 export type LinkedinContentType =
   | {
     article: {
@@ -215,11 +230,18 @@ type AssetVideoStatusSuccess =
   | {
     status: AssetStatusSuccessCodes.PROCESSING | AssetStatusSuccessCodes.WAITING_UPLOAD
   }
+
+/**
+ * The response from the LinkedIn API when requesting the status of an asset
+ */
 export type GetAssetStatusResponse<MediaType extends LinkedinMediaTypes> = MediaType extends
   | LinkedinMediaTypes.IMAGE
   | LinkedinMediaTypes.DOCUMENT ? AssetStatusSuccess | AssetStatusResponseError
   : AssetVideoStatusSuccess | AssetStatusResponseError
 
+/**
+ * The response from the LinkedIn API when posting a comment
+ */
 export interface PostCommentResponse {
   actor: string
   object: string
