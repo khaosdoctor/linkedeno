@@ -4,7 +4,7 @@ import { ExpiredTokenError } from './errors/ExpiredToken.ts'
 import { LinkedinAPIError } from './errors/LinkedinAPIError.ts'
 import { NoSavedTokenError } from './errors/NoSavedToken.ts'
 import { LinkedinURLs } from './lib/shared.ts'
-import { delay, logger } from './lib/deps.ts'
+import { delay } from './lib/deps.ts'
 import {
   GetAssetStatusResponse,
   GetSelfProfileResponse,
@@ -589,7 +589,7 @@ export class AuthenticatedLinkedinClient {
   async postComment(
     { postUrn, comment, authorUrn }: { postUrn: string; comment: string; authorUrn: string },
     accessToken = this.accessToken,
-    retries = this.retryAttempts
+    retries = 0
   ): Promise<PostCommentResponse> {
     this.logger.info(`LinkedinClient.postComment :: posting comment on ${postUrn}`)
 
@@ -609,10 +609,10 @@ export class AuthenticatedLinkedinClient {
       })
     })
 
-    if (response.status === 404 && !this.clientOptions.noRetries && retries > 0) {
+    if (response.status === 404 && !this.clientOptions.noRetries && retries <= this.retryAttempts) {
       this.logger.warn(`AuthenticatedClient.postComment :: post ${postUrn} not found, trying again`)
       await delay(this.defaultDelayBetweenRequestsMs * retries + 1)
-      return this.postComment({ postUrn, comment, authorUrn }, accessToken, retries - 1)
+      return this.postComment({ postUrn, comment, authorUrn }, accessToken, retries + 1)
     }
 
     const data = await response.json()
