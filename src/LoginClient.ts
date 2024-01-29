@@ -4,12 +4,13 @@ import { API_VERSION, LinkedinURLs, RESTLI_VERSION } from './lib/shared.ts'
 import { encodeBase64, logger } from './lib/deps.ts'
 import { accessTokenResponseSchema } from './lib/validations.ts'
 import { InvalidStateError } from './errors/InvalidState.ts'
+import { LinkedinOauthScopes } from '../mod.ts'
 
 export interface LinkedinClientOptions {
   clientId: string
   clientSecret: string
   oauthCallbackUrl: string
-  oauthScopes?: string[]
+  oauthScopes?: string[] | LinkedinOauthScopes[]
   customLogger?: typeof logger
   retryAttempts?: number
   defaultDelayBetweenRequestsMs?: number
