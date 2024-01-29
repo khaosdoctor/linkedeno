@@ -88,8 +88,8 @@ export class LinkedinClient {
         code: loginToken,
         redirect_uri: this.clientOptions.oauthCallbackUrl,
         client_id: this.clientOptions.clientId,
-        client_secret: this.clientOptions.clientSecret
-      })
+        client_secret: this.clientOptions.clientSecret,
+      }),
     })
 
     const data = accessTokenResponseSchema.parse(await response.json())

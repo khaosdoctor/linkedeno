@@ -5,7 +5,7 @@ export class InvalidStateError extends BaseError {
     super(`Nonce ${nonce} could not be found in the state`, {
       name: InvalidStateError.name,
       data: { nonce },
-      code: 'INVALID_STATE'
+      code: 'INVALID_STATE',
     })
   }
 }

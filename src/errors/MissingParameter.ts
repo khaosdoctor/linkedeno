@@ -5,7 +5,7 @@ export class MissingParameterError extends BaseError {
     super(`Missing parameter(s): ${parameterList.join(', ')}`, {
       name: MissingParameterError.name,
       data: { parameterList },
-      code: 'MISSING_PARAMETER'
+      code: 'MISSING_PARAMETER',
     })
   }
 }

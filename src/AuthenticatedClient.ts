@@ -12,7 +12,7 @@ import {
   LinkedinMediaTypes,
   LinkedinPostPayload,
   PostCommentResponse,
-  VideoUploadInstructions
+  VideoUploadInstructions,
 } from './lib/types.ts'
 import {
   AccessToken,
@@ -20,7 +20,7 @@ import {
   accessTokenResponseSchema,
   makeAccessToken,
   makeRefreshToken,
-  RefreshToken
+  RefreshToken,
 } from './lib/validations.ts'
 
 interface ImageOrDocumentUploadOptions {
@@ -35,30 +35,27 @@ interface UploadVideoOptions {
   uploadToken: string
 }
 
-type BaseInitializeUploadResponse<T extends Exclude<LinkedinMediaTypes, LinkedinMediaTypes.ARTICLE>> =
-  T extends LinkedinMediaTypes.IMAGE
-    ? {
-        value: {
-          uploadUrl: string
-          image: string
-        }
+type BaseInitializeUploadResponse<T extends Exclude<LinkedinMediaTypes, LinkedinMediaTypes.ARTICLE>> = T extends
+  LinkedinMediaTypes.IMAGE ? {
+    value: {
+      uploadUrl: string
+      image: string
+    }
+  }
+  : T extends LinkedinMediaTypes.DOCUMENT ? {
+      value: {
+        uploadUrl: string
+        document: string
       }
-    : T extends LinkedinMediaTypes.DOCUMENT
-    ? {
-        value: {
-          uploadUrl: string
-          document: string
-        }
+    }
+  : T extends LinkedinMediaTypes.VIDEO ? {
+      value: {
+        uploadToken: string
+        uploadInstructions: VideoUploadInstructions
+        video: string
       }
-    : T extends LinkedinMediaTypes.VIDEO
-    ? {
-        value: {
-          uploadToken: string
-          uploadInstructions: VideoUploadInstructions
-          video: string
-        }
-      }
-    : never
+    }
+  : never
 
 export class AuthenticatedLinkedinClient extends LinkedinClient {
   #accessToken?: AccessToken
@@ -157,11 +154,11 @@ export class AuthenticatedLinkedinClient extends LinkedinClient {
       grant_type: 'refresh_token',
       refresh_token: refreshToken,
       client_id: this.clientOptions.clientId,
-      client_secret: this.clientOptions.clientSecret
+      client_secret: this.clientOptions.clientSecret,
     })
     const response = await fetch(`${LinkedinURLs.getOrRefreshAccessToken}?${URLQueryString.toString()}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     })
 
     if (!response.ok) {
@@ -182,12 +179,14 @@ export class AuthenticatedLinkedinClient extends LinkedinClient {
   async #baseInitializeUpload<T extends Exclude<LinkedinMediaTypes, LinkedinMediaTypes.ARTICLE>>(
     mediaType: T,
     payload: InitializeUploadOptions<T>,
-    accessToken = this.accessToken
+    accessToken = this.accessToken,
   ): Promise<BaseInitializeUploadResponse<T>> {
     this.logger.info(
-      `AuthenticatedClient.baseInitializeUpload :: initializing upload for ${mediaType}, payload ${Deno.inspect(
-        payload
-      )}`
+      `AuthenticatedClient.baseInitializeUpload :: initializing upload for ${mediaType}, payload ${
+        Deno.inspect(
+          payload,
+        )
+      }`,
     )
     const response = await fetch(`${LinkedinURLs.assetUrl(mediaType)}?action=initializeUpload`, {
       method: 'POST',
@@ -195,9 +194,9 @@ export class AuthenticatedLinkedinClient extends LinkedinClient {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${accessToken}`,
         'LinkedIn-Version': this.apiVersion,
-        'X-Restli-Protocol-Version': this.restliProtocolVersion
+        'X-Restli-Protocol-Version': this.restliProtocolVersion,
       },
-      body: JSON.stringify({ initializeUploadRequest: payload })
+      body: JSON.stringify({ initializeUploadRequest: payload }),
     })
 
     const data = await response.json()
@@ -207,7 +206,7 @@ export class AuthenticatedLinkedinClient extends LinkedinClient {
         'Failed to initialize upload',
         data,
         response.status.toString(),
-        `FAILED_${mediaType.toUpperCase()}_UPLOAD_INIT`
+        `FAILED_${mediaType.toUpperCase()}_UPLOAD_INIT`,
       )
     }
 
@@ -216,63 +215,63 @@ export class AuthenticatedLinkedinClient extends LinkedinClient {
 
   async #initializeVideoUpload(
     options: InitializeUploadOptions<LinkedinMediaTypes.VIDEO>,
-    accessToken = this.accessToken
+    accessToken = this.accessToken,
   ) {
     const payload = {
       ...options,
       uploadCaptions: options.uploadCaptions ?? false,
-      uploadThumbnail: options.uploadThumbnail ?? false
+      uploadThumbnail: options.uploadThumbnail ?? false,
     }
 
     const data = await this.#baseInitializeUpload(LinkedinMediaTypes.VIDEO, payload, accessToken)
     return {
       urn: data.value.video,
       uploadUrl: data.value.uploadInstructions,
-      uploadToken: data.value.uploadToken
+      uploadToken: data.value.uploadToken,
     }
   }
 
   // Specific function for image/document uploads
   async #initializeImageUpload(
     options: InitializeUploadOptions<LinkedinMediaTypes.IMAGE>,
-    accessToken = this.accessToken
+    accessToken = this.accessToken,
   ) {
     const payload = {
-      owner: options.owner
+      owner: options.owner,
     }
 
     const {
-      value: { image: urn, uploadUrl }
+      value: { image: urn, uploadUrl },
     } = await this.#baseInitializeUpload(LinkedinMediaTypes.IMAGE, payload, accessToken)
 
     return {
       uploadUrl,
-      urn
+      urn,
     }
   }
 
   async #initializeDocumentUpload(
     options: InitializeUploadOptions<LinkedinMediaTypes.DOCUMENT>,
-    accessToken = this.accessToken
+    accessToken = this.accessToken,
   ) {
     const payload = {
-      owner: options.owner
+      owner: options.owner,
     }
 
     const {
-      value: { document: urn, uploadUrl }
+      value: { document: urn, uploadUrl },
     } = await this.#baseInitializeUpload(LinkedinMediaTypes.DOCUMENT, payload, accessToken)
 
     return {
       uploadUrl,
-      urn
+      urn,
     }
   }
 
   initializeUpload<T extends Exclude<LinkedinMediaTypes, LinkedinMediaTypes.ARTICLE>>(
     mediaType: T,
     options: InitializeUploadOptions<T>,
-    accessToken = this.accessToken
+    accessToken = this.accessToken,
   ) {
     switch (mediaType) {
       case LinkedinMediaTypes.VIDEO:
@@ -282,13 +281,13 @@ export class AuthenticatedLinkedinClient extends LinkedinClient {
       case LinkedinMediaTypes.DOCUMENT:
         return this.#initializeDocumentUpload(
           options as InitializeUploadOptions<LinkedinMediaTypes.DOCUMENT>,
-          accessToken
+          accessToken,
         )
       default:
         throw new BaseError(`Invalid media type ${mediaType}`, {
           code: 'INVALID_MEDIA_TYPE',
           data: { mediaType },
-          name: 'InitializeUploadError'
+          name: 'InitializeUploadError',
         })
     }
   }
@@ -303,14 +302,14 @@ export class AuthenticatedLinkedinClient extends LinkedinClient {
         throw new BaseError(`Failed to download media ${response.status}`, {
           code: 'FAILED_DOWNLOAD_MEDIA',
           data: { url },
-          name: 'DownloadMediaError'
+          name: 'DownloadMediaError',
         })
       }
       const downloaded = await response.blob()
       return {
         size: downloaded.size,
         blob: downloaded,
-        toUint8Array: async () => new Uint8Array(await downloaded.arrayBuffer())
+        toUint8Array: async () => new Uint8Array(await downloaded.arrayBuffer()),
       }
     }
 
@@ -318,7 +317,7 @@ export class AuthenticatedLinkedinClient extends LinkedinClient {
       return {
         size: url.size,
         blob: url,
-        toUint8Array: async () => new Uint8Array(await url.arrayBuffer())
+        toUint8Array: async () => new Uint8Array(await url.arrayBuffer()),
       }
     }
 
@@ -326,7 +325,7 @@ export class AuthenticatedLinkedinClient extends LinkedinClient {
       return {
         size: url.byteLength,
         blob: new Blob([url]),
-        toUint8Array: () => Promise.resolve(url)
+        toUint8Array: () => Promise.resolve(url),
       }
     }
 
@@ -334,14 +333,14 @@ export class AuthenticatedLinkedinClient extends LinkedinClient {
       return {
         size: url.byteLength,
         blob: new Blob([url]),
-        toUint8Array: () => Promise.resolve(new Uint8Array(url))
+        toUint8Array: () => Promise.resolve(new Uint8Array(url)),
       }
     }
 
     throw new BaseError(`Invalid source type ${typeof url}`, {
       code: 'INVALID_SOURCE_TYPE',
       data: { url },
-      name: 'DownloadMediaError'
+      name: 'DownloadMediaError',
     })
   }
 
@@ -349,7 +348,7 @@ export class AuthenticatedLinkedinClient extends LinkedinClient {
     this.logger.info(`AuthenticatedClient.uploadImageOrDocument :: uploading to ${options.uploadUrl}`)
     const downloadedMedia = await this.#downloadMedia(options.source)
     this.logger.info(
-      `AuthenticatedClient.uploadImageOrDocument :: got blob from source ${downloadedMedia.blob.type} ${downloadedMedia.blob.size}`
+      `AuthenticatedClient.uploadImageOrDocument :: got blob from source ${downloadedMedia.blob.type} ${downloadedMedia.blob.size}`,
     )
 
     const uploadOptions = {
@@ -359,30 +358,32 @@ export class AuthenticatedLinkedinClient extends LinkedinClient {
         'Content-Length': downloadedMedia.size.toString(),
         Authorization: `Bearer ${accessToken}`,
         'LinkedIn-Version': this.apiVersion,
-        'X-Restli-Protocol-Version': this.restliProtocolVersion
+        'X-Restli-Protocol-Version': this.restliProtocolVersion,
       },
-      body: await downloadedMedia.toUint8Array()
+      body: await downloadedMedia.toUint8Array(),
     }
     const uploadResponse = await fetch(options.uploadUrl, uploadOptions)
 
     this.logger.info(
-      `AuthenticatedClient.uploadImageOrDocument :: uploaded ${downloadedMedia.size} bytes -> ${uploadResponse.status}`
+      `AuthenticatedClient.uploadImageOrDocument :: uploaded ${downloadedMedia.size} bytes -> ${uploadResponse.status}`,
     )
 
     if (!uploadResponse.ok) {
       const data = await uploadResponse.json()
       this.logger.error(
-        `AuthenticatedClient.uploadImageOrDocument :: failed to upload asset ${uploadResponse.status} ${JSON.stringify(
-          data,
-          null,
-          2
-        )})}`
+        `AuthenticatedClient.uploadImageOrDocument :: failed to upload asset ${uploadResponse.status} ${
+          JSON.stringify(
+            data,
+            null,
+            2,
+          )
+        })}`,
       )
       throw new LinkedinAPIError(
         'Failed to upload image or document',
         data,
         uploadResponse.status.toString(),
-        'FAILED_IMAGE_OR_DOCUMENT_UPLOAD'
+        'FAILED_IMAGE_OR_DOCUMENT_UPLOAD',
       )
     }
 
@@ -399,7 +400,7 @@ export class AuthenticatedLinkedinClient extends LinkedinClient {
      */
     const promises = []
     this.logger.info(
-      `AuthenticatedClient.uploadVideo :: uploading ${options.videoBlob.size} bytes in ${options.urlArray.length} chunks`
+      `AuthenticatedClient.uploadVideo :: uploading ${options.videoBlob.size} bytes in ${options.urlArray.length} chunks`,
     )
     for (const { uploadUrl, firstByte, lastByte } of options.urlArray) {
       // If there's more than one chunk, slice the blob (slice is exclusive so we need to add 1 to lastByte or this will fail)
@@ -409,13 +410,13 @@ export class AuthenticatedLinkedinClient extends LinkedinClient {
         'Content-Length': chunk.size.toString(),
         Authorization: `Bearer ${accessToken}`,
         'LinkedIn-Version': this.apiVersion,
-        'X-Restli-Protocol-Version': this.restliProtocolVersion
+        'X-Restli-Protocol-Version': this.restliProtocolVersion,
       }
 
       const requestOptions = {
         method: 'PUT',
         headers,
-        body: new Uint8Array(await chunk.arrayBuffer())
+        body: new Uint8Array(await chunk.arrayBuffer()),
       }
 
       this.logger.debug(`AuthenticatedClient.uploadVideo :: uploading ${chunk.size} bytes to ${uploadUrl}`)
@@ -433,23 +434,23 @@ export class AuthenticatedLinkedinClient extends LinkedinClient {
       {
         videoUrn: options.videoUrn,
         uploadToken: options.uploadToken,
-        ETags
+        ETags,
       },
-      accessToken
+      accessToken,
     )
   }
 
   async finalizeVideoUpload(
     { videoUrn, uploadToken, ETags }: Omit<UploadVideoOptions, 'videoBlob' | 'urlArray'> & { ETags: string[] },
     accessToken = this.accessToken,
-    retries = this.retries
+    retries = this.retries,
   ): Promise<boolean> {
     const body = JSON.stringify({
       finalizeUploadRequest: {
         uploadToken,
         video: videoUrn,
-        uploadedPartIds: ETags
-      }
+        uploadedPartIds: ETags,
+      },
     })
 
     const options = {
@@ -458,9 +459,9 @@ export class AuthenticatedLinkedinClient extends LinkedinClient {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${accessToken}`,
         'LinkedIn-Version': this.apiVersion,
-        'X-Restli-Protocol-Version': this.restliProtocolVersion
+        'X-Restli-Protocol-Version': this.restliProtocolVersion,
       },
-      body
+      body,
     }
 
     this.logger.debug(`AuthenticatedClient.finalizeVideoUpload :: options ${Deno.inspect(options)}`)
@@ -484,12 +485,12 @@ export class AuthenticatedLinkedinClient extends LinkedinClient {
           'Failed to finalize video upload',
           data,
           response.status.toString(),
-          'FAILED_VIDEO_UPLOAD_FINALIZE'
+          'FAILED_VIDEO_UPLOAD_FINALIZE',
         )
       }
 
       this.logger.warn(
-        `LinkedinClient.finalizeVideoUpload :: failed to finalize video upload, trying again (${retries}/3)`
+        `LinkedinClient.finalizeVideoUpload :: failed to finalize video upload, trying again (${retries}/3)`,
       )
       await delay(this.defaultDelayBetweenRequestsMs * retries + 1)
       return this.finalizeVideoUpload({ videoUrn, uploadToken, ETags }, accessToken, retries - 1)
@@ -501,8 +502,8 @@ export class AuthenticatedLinkedinClient extends LinkedinClient {
   async getSelfProfile(accessToken = this.accessToken): Promise<GetSelfProfileResponse> {
     const response = await fetch(LinkedinURLs.getUserProfile, {
       headers: {
-        Authorization: `Bearer ${accessToken}`
-      }
+        Authorization: `Bearer ${accessToken}`,
+      },
     })
     this.logger.debug(`AuthenticatedClient.getSelfProfile :: response ${response.status}`)
 
@@ -523,9 +524,9 @@ export class AuthenticatedLinkedinClient extends LinkedinClient {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${accessToken}`,
         'LinkedIn-Version': this.apiVersion,
-        'X-Restli-Protocol-Version': this.restliProtocolVersion
+        'X-Restli-Protocol-Version': this.restliProtocolVersion,
       },
-      body: JSON.stringify(postPayload)
+      body: JSON.stringify(postPayload),
     })
 
     this.logger.debug(`AuthenticatedClient.sharePost :: response ${response.status}`)
@@ -548,7 +549,7 @@ export class AuthenticatedLinkedinClient extends LinkedinClient {
   async postComment(
     { postUrn, comment, authorUrn }: { postUrn: string; comment: string; authorUrn: string },
     accessToken = this.accessToken,
-    retries = this.retries
+    retries = this.retries,
   ): Promise<PostCommentResponse> {
     this.logger.info(`LinkedinClient.postComment :: posting comment on ${postUrn}`)
 
@@ -557,15 +558,15 @@ export class AuthenticatedLinkedinClient extends LinkedinClient {
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${accessToken}`,
-        'LinkedIn-Version': this.apiVersion
+        'LinkedIn-Version': this.apiVersion,
       },
       body: JSON.stringify({
         actor: authorUrn,
         object: postUrn,
         message: {
-          text: comment
-        }
-      })
+          text: comment,
+        },
+      }),
     })
 
     if (response.status === 404 && !this.clientOptions.noRetries && retries > 0) {
@@ -586,19 +587,19 @@ export class AuthenticatedLinkedinClient extends LinkedinClient {
       `Failed to post comment to post ${postUrn}`,
       data,
       response.status.toString(),
-      'FAILED_POST_COMMENT'
+      'FAILED_POST_COMMENT',
     )
   }
 
   async getAssetStatus<T extends LinkedinMediaTypes>(
     mediaType: T,
-    mediaUrn: string
+    mediaUrn: string,
   ): Promise<GetAssetStatusResponse<T>> {
     const response = await fetch(LinkedinURLs.assetUrl(mediaType) + `/${mediaUrn}`, {
       headers: {
         Authorization: `Bearer ${this.accessToken}`,
-        'LinkedIn-Version': this.apiVersion
-      }
+        'LinkedIn-Version': this.apiVersion,
+      },
     })
 
     if (!response.ok) {
@@ -607,7 +608,7 @@ export class AuthenticatedLinkedinClient extends LinkedinClient {
         `Failed to get asset status for ${mediaType} ${mediaUrn}`,
         data,
         response.status.toString(),
-        'FAILED_GET_ASSET_STATUS'
+        'FAILED_GET_ASSET_STATUS',
       )
     }
 

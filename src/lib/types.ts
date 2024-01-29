@@ -2,7 +2,7 @@ export enum LinkedinMediaTypes {
   IMAGE = 'image',
   DOCUMENT = 'document',
   ARTICLE = 'article',
-  VIDEO = 'video'
+  VIDEO = 'video',
 }
 
 /**
@@ -41,17 +41,15 @@ export const enum LinkedinOauthScopes {
   ORGANIZATION_SHARE_READ = 'r_organization_social',
   ORGANIZATION_SHARE_WRITE = 'w_organization_social',
   ORGANIZATION_ADMIN = 'rw_organization_admin',
-  ORGANIZATION_ADMIN_READ = 'r_organization_admin'
+  ORGANIZATION_ADMIN_READ = 'r_organization_admin',
 }
 
 export type InitializeUploadOptions<T extends LinkedinMediaTypes> = T extends
   | LinkedinMediaTypes.IMAGE
-  | LinkedinMediaTypes.DOCUMENT
-  ? {
-      owner: string
-    }
-  : T extends LinkedinMediaTypes.VIDEO
-  ? {
+  | LinkedinMediaTypes.DOCUMENT ? {
+    owner: string
+  }
+  : T extends LinkedinMediaTypes.VIDEO ? {
       owner: string
       fileSizeBytes: number
       uploadCaptions?: boolean
@@ -93,37 +91,37 @@ export interface GetSelfProfileResponse {
 
 type LinkedinAdContextType =
   | {
-      dscAdAccount?: string
-      dscAdType?: 'VIDEO' | 'STANDARD' | 'CAROUSEL' | 'JOB_POSTING' | 'NATIVE_DOCUMENT' | 'EVENT'
-      dscName?: string
-      dscStatus?: 'ACTIVE' | 'ARCHIVED'
-      isDsc: false
-    }
+    dscAdAccount?: string
+    dscAdType?: 'VIDEO' | 'STANDARD' | 'CAROUSEL' | 'JOB_POSTING' | 'NATIVE_DOCUMENT' | 'EVENT'
+    dscName?: string
+    dscStatus?: 'ACTIVE' | 'ARCHIVED'
+    isDsc: false
+  }
   | {
-      dscAdAccount: string
-      dscAdType: 'VIDEO' | 'STANDARD' | 'CAROUSEL' | 'JOB_POSTING' | 'NATIVE_DOCUMENT' | 'EVENT'
-      dscName?: string
-      dscStatus: 'ACTIVE' | 'ARCHIVED'
-      isDsc: true
-    }
+    dscAdAccount: string
+    dscAdType: 'VIDEO' | 'STANDARD' | 'CAROUSEL' | 'JOB_POSTING' | 'NATIVE_DOCUMENT' | 'EVENT'
+    dscName?: string
+    dscStatus: 'ACTIVE' | 'ARCHIVED'
+    isDsc: true
+  }
 
 export type LinkedinContentType =
   | {
-      article: {
-        source: string
-        title: string
-        description?: string
-        thumbnail?: string
-      }
-      media?: never
+    article: {
+      source: string
+      title: string
+      description?: string
+      thumbnail?: string
     }
+    media?: never
+  }
   | {
-      media: {
-        id: string
-        title: string
-      }
-      article?: never
+    media: {
+      id: string
+      title: string
     }
+    article?: never
+  }
 
 interface LinkedinDistributionType {
   feedDistribution: 'NONE' | 'MAIN_FEED'
@@ -190,7 +188,7 @@ const enum AssetStatusSuccessCodes {
   SUCCESS = 'SUCCESS',
   WAITING_UPLOAD = 'WAITING_UPLOAD',
   AVAILABLE = 'AVAILABLE',
-  PROCESSING = 'PROCESSING'
+  PROCESSING = 'PROCESSING',
 }
 
 interface AssetStatusResponseError extends AssetStatusResponseBase {
@@ -207,20 +205,19 @@ interface AssetStatusSuccess extends AssetStatusResponseBase {
 
 type AssetVideoStatusSuccess =
   | (AssetStatusSuccess & {
-      duration: number
-      aspectRationWidth: number
-      thumbnail?: string
-      aspectRationHeight: number
-      captions?: string
-      status: AssetStatusSuccessCodes.AVAILABLE
-    })
+    duration: number
+    aspectRationWidth: number
+    thumbnail?: string
+    aspectRationHeight: number
+    captions?: string
+    status: AssetStatusSuccessCodes.AVAILABLE
+  })
   | {
-      status: AssetStatusSuccessCodes.PROCESSING | AssetStatusSuccessCodes.WAITING_UPLOAD
-    }
+    status: AssetStatusSuccessCodes.PROCESSING | AssetStatusSuccessCodes.WAITING_UPLOAD
+  }
 export type GetAssetStatusResponse<MediaType extends LinkedinMediaTypes> = MediaType extends
   | LinkedinMediaTypes.IMAGE
-  | LinkedinMediaTypes.DOCUMENT
-  ? AssetStatusSuccess | AssetStatusResponseError
+  | LinkedinMediaTypes.DOCUMENT ? AssetStatusSuccess | AssetStatusResponseError
   : AssetVideoStatusSuccess | AssetStatusResponseError
 
 export interface PostCommentResponse {

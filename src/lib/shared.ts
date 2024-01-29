@@ -12,5 +12,5 @@ export const LinkedinURLs = {
   getOrRefreshAccessToken: baseAuthUrl + '/accessToken',
   sharePost: assetBaseUrl + '/posts',
   postComment: (postUrn: string) => baseAPIUrl + `/socialActions/${postUrn}/comments`,
-  assetUrl: (assetType: LinkedinMediaTypes) => assetBaseUrl + `/${assetType}s`
+  assetUrl: (assetType: LinkedinMediaTypes) => assetBaseUrl + `/${assetType}s`,
 } as const
