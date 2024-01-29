@@ -19,9 +19,9 @@ export interface LinkedinClientOptions {
 }
 
 export class LinkedinClient {
-  protected readonly logger = logger
-  protected readonly retries: number
-  protected readonly defaultDelayBetweenRequestsMs: number
+  readonly logger = logger
+  readonly retries: number
+  readonly defaultDelayBetweenRequestsMs: number
   static sessionMap = new Set<string>()
 
   apiVersion = API_VERSION
@@ -88,13 +88,13 @@ export class LinkedinClient {
         code: loginToken,
         redirect_uri: this.clientOptions.oauthCallbackUrl,
         client_id: this.clientOptions.clientId,
-        client_secret: this.clientOptions.clientSecret,
-      }),
+        client_secret: this.clientOptions.clientSecret
+      })
     })
 
     const data = accessTokenResponseSchema.parse(await response.json())
     this.logger.debug(`LinkedinClient.exchangeAccessToken :: data ${Deno.inspect(data)}`)
 
-    return new AuthenticatedLinkedinClient(this.clientOptions, data)
+    return new AuthenticatedLinkedinClient(this.clientOptions, data, this)
   }
 }
