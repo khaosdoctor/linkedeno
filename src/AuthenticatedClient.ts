@@ -101,6 +101,10 @@ export class AuthenticatedLinkedinClient extends LinkedinClient {
   //#endregion
 
   //#region Accessors
+  set accessToken(token: AccessToken | string) {
+    const branded = makeAccessToken(token)
+    this.#accessToken = branded
+  }
   get accessToken() {
     if (!this.#accessToken || !this.accessTokenExpirationDate) {
       throw new NoSavedTokenError('access')
@@ -118,6 +122,11 @@ export class AuthenticatedLinkedinClient extends LinkedinClient {
     }
 
     return this.accessTokenExpirationDate
+  }
+
+  set refreshToken(token: RefreshToken | string) {
+    const branded = makeRefreshToken(token)
+    this.#refreshToken = branded
   }
 
   get refreshToken() {

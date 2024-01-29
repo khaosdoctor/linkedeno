@@ -22,7 +22,8 @@
 
 ## Usage
 
-> For more usage examples see [an example repository](https://github.com/Formacao-Typescript/cloud-socials/blob/main/src/networks/linkedin.ts)
+> For more usage examples see
+> [an example repository](https://github.com/Formacao-Typescript/cloud-socials/blob/main/src/networks/linkedin.ts)
 
 You'll need:
 
@@ -58,14 +59,18 @@ interface LinkedinClientOptions {
 }
 ```
 
-> **About Retries**: The LinkedIn API sometimes take a while to process images, videos or other data. If this is the case, posts cannot be created unless the data is processed. This is a retry mechanism that will retry things like uploading videos, posting comments, etc with an exponential backoff of `delay * retry` milliseconds. This is a best effort approach and it's not guaranteed to work.
+> **About Retries**: The LinkedIn API sometimes take a while to process images, videos or other data. If this is the
+> case, posts cannot be created unless the data is processed. This is a retry mechanism that will retry things like
+> uploading videos, posting comments, etc with an exponential backoff of `delay * retry` milliseconds. This is a best
+> effort approach and it's not guaranteed to work.
 
 ## Logging in
 
-This lib only provides the 3-legged OAuth2 flow. You'll need to implement your own server to handle the callback. The callback will receive a `code` query parameter that you'll need to pass to the `exchangeLoginToken` method.
+This lib only provides the 3-legged OAuth2 flow. You'll need to implement your own server to handle the callback. The
+callback will receive a `code` query parameter that you'll need to pass to the `exchangeLoginToken` method.
 
 ```ts
-import { LinkedinClient, InvalidStateError } from 'https://deno.land/x/linkedin/mod.ts'
+import { InvalidStateError, LinkedinClient } from 'https://deno.land/x/linkedin/mod.ts'
 const ln = new LinkedinClient(options) // fill in the options with the callback url
 let authenticatedClient = undefined
 
@@ -89,8 +94,8 @@ app.get('/oauth/callback', async (ctx) => {
     throw oak.createHttpError(400, 'Error from Linkedin', {
       cause: {
         error: params.get('error'),
-        error_description: decodeURIComponent(params.get('error_description')!)
-      }
+        error_description: decodeURIComponent(params.get('error_description')!),
+      },
     })
   }
 
@@ -107,14 +112,14 @@ app.get('/oauth/callback', async (ctx) => {
     ctx.response.status = 200
     ctx.response.body = {
       status: 'ok',
-      message: 'Logged in successfully'
+      message: 'Logged in successfully',
     }
   } catch (err) {
     if (err instanceof InvalidStateError) {
       ctx.response.status = 401
       ctx.response.body = {
         status: 'error',
-        message: 'Invalid state'
+        message: 'Invalid state',
       }
       return
     }
@@ -124,20 +129,34 @@ app.get('/oauth/callback', async (ctx) => {
 
 ### Nonce, state and CSRF
 
-The `loginUrl` method will return an object with a `url` and a `nonce`. The `nonce` is a random string that you'll need to store in your session. When the user is redirected to the callback URL, you'll need to check that the `state` query parameter matches the `nonce` you stored in your session. This is to prevent CSRF attacks.
+The `loginUrl` method will return an object with a `url` and a `nonce`. The `nonce` is a random string that you'll need
+to store in your session. When the user is redirected to the callback URL, you'll need to check that the `state` query
+parameter matches the `nonce` you stored in your session. This is to prevent CSRF attacks.
 
-This lib has a built-in simple session manager that will save all generated nonces in memory for a specified amount of time (defined in the `LinkedinClientOptions` object). The session manager lives in a static property of the `LinkedinClient` class called `validSessions`, it's a read-only `Set` of strings that contains all the valid nonces that were generated.
+This lib has a built-in simple session manager that will save all generated nonces in memory for a specified amount of
+time (defined in the `LinkedinClientOptions` object). The session manager lives in a static property of the
+`LinkedinClient` class called `validSessions`, it's a read-only `Set` of strings that contains all the valid nonces that
+were generated.
 
-When the `exchangeLoginToken` method is called, it will check that the `state` parameter matches one of the nonces in the `validSessions` set. If it doesn't, it will throw an `InvalidStateError` error and early return.
+When the `exchangeLoginToken` method is called, it will check that the `state` parameter matches one of the nonces in
+the `validSessions` set. If it doesn't, it will throw an `InvalidStateError` error and early return.
 
-You can disable this behavior by setting the `noValidateCSRF` option to `true` in the `LinkedinClientOptions` object. By doing this, the nonces will no longer be saved, and the `exchangeLoginToken` method will not check the `state` parameter and will just exchange the code for an access token. **Only do this if you intend to implement your own nonce validation mechanism.**
+You can disable this behavior by setting the `noValidateCSRF` option to `true` in the `LinkedinClientOptions` object. By
+doing this, the nonces will no longer be saved, and the `exchangeLoginToken` method will not check the `state` parameter
+and will just exchange the code for an access token. **Only do this if you intend to implement your own nonce validation
+mechanism.**
 
 ## Making requests
 
 ### Token handling
 
-The exchange method will return an authenticated client that you can use to make requests to the API. This client contains all the methods you need to make requests to the API (at least the available ones).
+The exchange method will return an authenticated client that you can use to make requests to the API. This client
+contains all the methods you need to make requests to the API (at least the available ones).
 
-It will store both the access token and the refresh token in memory. You can access them through the `accessToken` and `refreshToken` properties. These accessors will make checks to see if the tokens are expired but won't refresh them automatically. You can use the `refreshAccessToken` method to refresh all the tokens.
+It will store both the access token and the refresh token in memory. You can access them through the `accessToken` and
+`refreshToken` properties. These accessors will make checks to see if the tokens are expired but won't refresh them
+automatically. You can use the `refreshAccessToken` method to refresh all the tokens.
 
-In case one of the tokens is expired or not present, the lib will throw an error. You can catch this error and call `refreshAccessToken` to refresh the tokens and retry the request, except if the refresh token itself is expired, in this case you need to log in again since there's no way to refresh the refresh token.
+In case one of the tokens is expired or not present, the lib will throw an error. You can catch this error and call
+`refreshAccessToken` to refresh the tokens and retry the request, except if the refresh token itself is expired, in this
+case you need to log in again since there's no way to refresh the refresh token.
