@@ -102,7 +102,7 @@ export class AuthenticatedLinkedinClient extends LinkedinClient {
     const branded = makeAccessToken(token)
     this.#accessToken = branded
   }
-  get accessToken() {
+  get accessToken(): AccessToken {
     if (!this.#accessToken || !this.accessTokenExpirationDate) {
       throw new NoSavedTokenError('access')
     }
@@ -110,7 +110,7 @@ export class AuthenticatedLinkedinClient extends LinkedinClient {
     if (this.#isExpired(this.accessTokenExpirationDate)) {
       throw new ExpiredTokenError('access')
     }
-    return this.#accessToken as AccessToken
+    return this.#accessToken
   }
 
   get accessTokenExpiration() {
@@ -126,7 +126,7 @@ export class AuthenticatedLinkedinClient extends LinkedinClient {
     this.#refreshToken = branded
   }
 
-  get refreshToken() {
+  get refreshToken(): RefreshToken {
     if (!this.#refreshToken || !this.refreshTokenExpirationDate) {
       throw new NoSavedTokenError('refresh')
     }
@@ -135,7 +135,7 @@ export class AuthenticatedLinkedinClient extends LinkedinClient {
       throw new ExpiredTokenError('refresh')
     }
 
-    return this.#refreshToken as RefreshToken
+    return this.#refreshToken
   }
 
   get refreshTokenExpiration() {
