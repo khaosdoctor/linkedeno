@@ -23,6 +23,17 @@ import {
   RefreshToken,
 } from './lib/validations.ts'
 
+interface ImageOrDocumentUploadResponse {
+  urn: string
+  uploadUrl: string
+}
+
+interface VideoUploadResponse {
+  urn: string
+  uploadUrl: VideoUploadInstructions
+  uploadToken: string
+}
+
 interface ImageOrDocumentUploadOptions {
   uploadUrl: string
   source: string | Blob | Uint8Array | ArrayBuffer
@@ -268,9 +279,19 @@ export class AuthenticatedLinkedinClient extends LinkedinClient {
     }
   }
 
-  initializeUpload<T extends Exclude<LinkedinMediaTypes, LinkedinMediaTypes.ARTICLE>>(
-    mediaType: T,
-    options: InitializeUploadOptions<T>,
+  initializeUpload(
+    mediaType: LinkedinMediaTypes.VIDEO,
+    options: InitializeUploadOptions<LinkedinMediaTypes.VIDEO>,
+    accessToken?: AccessToken,
+  ): Promise<VideoUploadResponse>
+  initializeUpload(
+    mediaType: LinkedinMediaTypes.IMAGE | LinkedinMediaTypes.DOCUMENT,
+    options: InitializeUploadOptions<typeof mediaType>,
+    accessToken?: AccessToken,
+  ): Promise<ImageOrDocumentUploadResponse>
+  initializeUpload(
+    mediaType: Exclude<LinkedinMediaTypes, LinkedinMediaTypes.ARTICLE>,
+    options: InitializeUploadOptions<typeof mediaType>,
     accessToken = this.accessToken,
   ) {
     switch (mediaType) {
